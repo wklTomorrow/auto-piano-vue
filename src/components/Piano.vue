@@ -196,7 +196,7 @@ export default {
       bandImg: require('../assets/images/band.png'),
       enableBlackKey: false, // 启用黑色按键
       showKeyName: true, // 显示键名
-      showNoteName: false, // 显示音符名
+      showNoteName: true, // 显示音符名
       Notes: Notes,
       synth: null,
       keydownTimer: null,

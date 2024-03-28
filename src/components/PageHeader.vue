@@ -26,7 +26,7 @@
     </a>
     <div class="menu">
       <router-link class="menu-item" :to="{ path: '/' }" active-class="menu-item-active" exact>首页</router-link>
-      <router-link class="menu-item" :to="{ path: '/links' }" active-class="menu-item-active" exact>友情链接</router-link>
+      <!-- <router-link class="menu-item" :to="{ path: '/links' }" active-class="menu-item-active" exact>友情链接</router-link> -->
       <a class="menu-item" @click.stop="emitChangeWallPaper">更换壁纸</a>
       <!--<a class="menu-item" >钢琴基础教学</a>-->
     </div>

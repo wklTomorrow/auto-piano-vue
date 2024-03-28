@@ -1,8 +1,6 @@
 # AutoPiano
 
-![GitHub](https://img.shields.io/github/license/autopiano/autopiano)
-
-![logo](https://user-images.githubusercontent.com/8694020/87133555-1afa1200-c2ca-11ea-92d4-c183cf35e4a4.png)
+破晓
 
 https://www.autopiano.cn
 

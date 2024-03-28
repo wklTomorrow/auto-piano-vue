@@ -172,6 +172,7 @@ export default {
         this.stopMusicPlayer()
       }, 2e3)
     })
+    console.log(ScoreNum)
   },
   methods: {
     clickScoreItem(item, scoreType) {

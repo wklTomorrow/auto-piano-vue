@@ -111,15 +111,15 @@
         <ManualPlayScoreList></ManualPlayScoreList>
         <AutoPlayScoreList></AutoPlayScoreList>
       </div>
-      <h2 class="section-title responsive-section-a">探索实体乐器</h2>
-      <CommodityList />
+      <!-- <h2 class="section-title responsive-section-a">探索实体乐器</h2> -->
+      <!-- <CommodityList /> -->
       <div class="right-drawer" :class="{ show: rightDrawerShow }">
         <div class="trigger" @click="toggleRightDrawer">歌曲列表</div>
         <div class="close" @click="hideRightDrawer">X</div>
         <ManualPlayScoreList></ManualPlayScoreList>
       </div>
       <div class="blank-page-pc" style="height: 200px"></div>
-      <PageFooter></PageFooter>
+      <!-- <PageFooter></PageFooter> -->
     </div>
   </div>
 </template>
