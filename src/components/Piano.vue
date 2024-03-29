@@ -27,15 +27,15 @@
       width: 100%;
       height: 40px;
       line-height: 40px;
-      background: #000;
+      background: rgb(73, 244, 178);
       box-shadow: inset 0px -1px 2px rgba(255, 255, 255, 0.4),
         0 2px 3px rgba(0, 0, 0, 0.4);
       border-width: 3px 2px 2px;
       border-style: solid;
-      border-color: #555 #222 #111 #777;
+      border-color: rgba(0, 204, 102, 0.4);
       position: relative;
       .piano-band-img {
-        width: 130px;
+        width: 35px;
         height: 100%;
         position: absolute;
         top: 0;
@@ -324,7 +324,10 @@
 
 <template>
   <div class="component-autopiano" ref="PianoComponent">
-    <button @click="playSong">demo</button>
+    <button @click="playSong">play</button>
+    <input type="text" v-model="songArr" />
+    <input type="number" v-model="timePer" />
+    <button @click="fetchSimilar">fetch</button>
     <div class="piano-scroll-wrap">
       <div
         class="piano-wrap responsive-section-a"
@@ -487,6 +490,7 @@ import { debounce } from "@/lib/wutils";
 import pianoAutoPlayMixin from "@/mixins/pianoAutoPlayMixin";
 import xmlAutoPlayMixin from "@/mixins/xmlAutoPlayMixin";
 import midiAutoPlayMixin from "@/mixins/midiAutoPlayMixin";
+import { getSimilar } from "@/serve";
 
 export default {
   name: "Piano",
@@ -496,7 +500,7 @@ export default {
     return {
       DEV: false,
       pianoShow: false,
-      bandImg: require("../assets/images/band.png"),
+      bandImg: require("../assets/images/zebra.png"),
       enableBlackKey: false, // 启用黑色按键
       showKeyName: true, // 显示键名
       showNoteName: true, // 显示音符名
@@ -505,202 +509,8 @@ export default {
       keydownTimer: null,
       keyLock: false,
       lastKeyCode: "",
-      lastKeyTime: 0
-    };
-  },
-  mounted() {
-    this.initPiano();
-  },
-  beforeDestroy() {
-    this.keydownTimer = null;
-  },
-  methods: {
-    // 钢琴初始化
-    async initPiano() {
-      setTimeout(() => {
-        this.computeEleSize();
-        this.pianoShow = true;
-      }, 300);
-      this.bindKeyBoradEvent();
-      this.setListener();
-
-      this.synth = SmapleLibrary.load({
-        instruments: "piano"
-      }).toMaster();
-
-      // this.synth = new Tone.PolySynth( 10 ).toMaster()
-    },
-    computeEleSize() {
-      let wkey_width = $(".piano-key-wrap").width() / 36;
-      let wkey_height = wkey_width * 7;
-      let bkey_height = wkey_height * 0.7;
-      $(".piano-key-wrap").height(wkey_height);
-      $(".bkey").height(bkey_height);
-    },
-    setListener() {
-      window.onresize = this.computeEleSize;
-      window.onorientationchange = this.computeEleSize;
-
-      // 数字简谱自动播放
-      Observe.$on(OBEvent.AUTO_PLAY_NUM_SCORE, scorename => {
-        this.playScoreByName(scorename);
-      });
-      // XML乐谱自动播放
-      Observe.$on(OBEvent.AUTO_PLAY_XML_SCORE, musicScore => {
-        this.addToPlayQueue(musicScore);
-        // try {
-        //   this.playXMLScore(musicScore)
-        // } catch (e) {
-        //   console.log(e)
-        // }
-      });
-      // MIDI 自动播放
-      Observe.$on(OBEvent.AUTO_PLAY_MIDI, midiUrl => {
-        this.loadMidiAndPlay(midiUrl);
-      });
-      // 暂停自动播放
-      Observe.$on(OBEvent.STOP_AUTO_PLAY, scoreItem => {
-        this.pauseAutoPlay(scoreItem);
-        this.pauseXMLPlay();
-        this.pauseXMLPlay();
-        this.stopMidiPlay();
-      });
-    },
-    getNoteByKeyCode(keyCode) {
-      // 改为更高性能的写法
-      let target;
-      let len = this.Notes.length || 0;
-      for (let i = 0; i < len; i++) {
-        let note = this.Notes[i];
-        if (note.keyCode == keyCode) {
-          target = note;
-          break;
-        }
-      }
-      return target;
-    },
-    getNoteByNameCode(name) {
-      // 改为更高性能的写法
-      let target;
-      let len = this.Notes.length || 0;
-      for (let i = 0; i < len; i++) {
-        let note = this.Notes[i];
-        if (note.name == name) {
-          target = note;
-          break;
-        }
-      }
-      return target;
-    },
-    getNoteByName(name = "C4") {
-      // 改为更高性能的写法
-      let target;
-      let len = this.Notes.length || 0;
-      for (let i = 0; i < len; i++) {
-        let note = this.Notes[i];
-        if (note.name == name) {
-          target = note;
-          break;
-        }
-      }
-      return target;
-    },
-    // 键盘操作 核心代码
-    bindKeyBoradEvent() {
-      const ShiftKeyCode = 16;
-      document.addEventListener(
-        "keydown",
-        e => {
-          let keyCode = e.keyCode;
-          if (this.DEV) console.log("keydown", keyCode);
-          // 按住Shfit键，则启用黑色按键
-          if (keyCode == ShiftKeyCode) {
-            this.enableBlackKey = true;
-          }
-          if (this.enableBlackKey) keyCode = "b" + keyCode;
-
-          if (keyCode == this.lastKeyCode) {
-            // 连续触发同一个键时，应节流 + 延音
-            if (!this.keyLock) {
-              this.playNoteByKeyCode(keyCode);
-              // 这里应该延音，解决中...
-              this.lastKeyCode = keyCode;
-              this.keyLock = true;
-            }
-            if (this.keydownTimer) {
-              clearTimeout(this.keydownTimer);
-              this.keydownTimer = null;
-            }
-            this.keydownTimer = setTimeout(() => {
-              this.keyLock = false;
-            }, 120);
-          } else {
-            this.playNoteByKeyCode(keyCode);
-            this.lastKeyCode = keyCode;
-          }
-        },
-        false
-      );
-      // document.addEventListener('keydown', debounce((e) => {
-      //   let keyCode = e.keyCode;
-      //   let time = +new Date()
-      //   if (this.DEV) console.log('keydown', keyCode);
-      //   // 按住Shfit键，则启用黑色按键
-      //   if (keyCode == ShiftKeyCode) {
-      //     this.enableBlackKey = true
-      //   }
-      //   if (this.enableBlackKey) keyCode = 'b' + keyCode
-      //   this.playNoteByKeyCode(keyCode)
-      //   this.lastKeyCode = keyCode
-      //   this.lastKeyTime = +new Date()
-      // }, 100, { leading: true, trailing: false }), false)
-
-      document.addEventListener(
-        "keyup",
-        e => {
-          // console.log('keyup');
-          let keyCode = e.keyCode;
-          // 松开Shfit键，则禁用黑色按键
-          if (keyCode == ShiftKeyCode) {
-            this.enableBlackKey = false;
-          }
-          $(`.wkey`).removeClass("wkey-active");
-          $(`.bkey`).removeClass("bkey-active");
-        },
-        false
-      );
-    },
-    // 鼠标操作，点击按键播放
-    clickPianoKey(e, keyCode) {
-      let pressedNote = this.getNoteByKeyCode(keyCode);
-      if (pressedNote) {
-        this.playNote(pressedNote.name);
-      }
-    },
-
-    // 根据键值播放音符
-    playNoteByKeyCode(keyCode) {
-      let pressedNote = this.getNoteByKeyCode(keyCode);
-      if (pressedNote) {
-        this.playNote(pressedNote.name);
-        let keyType = pressedNote.type;
-        if (keyType == "white") {
-          $(`[data-keyCode=${pressedNote.keyCode}]`).addClass("wkey-active");
-        } else if (keyType == "black") {
-          $(`[data-keyCode=${pressedNote.keyCode}]`).addClass("bkey-active");
-        }
-      }
-    },
-    // 触发单个音符播放
-    playNote(notename = "C4", duration = "1n") {
-      if (!this.synth) return;
-      try {
-        this.synth.triggerAttackRelease(notename, duration);
-      } catch (e) {}
-    },
-    playSong() {
-      let delay = 0;
-      const arr = [
+      lastKeyTime: 0,
+      songArr: ` [
         "[D4,F2]_1",
         "E4_1",
         "A3_0.5",
@@ -1075,10 +885,211 @@ export default {
         "[A4,E3]_1",
         "[C5,D2]_1",
         "[D5,E2]_1"
-      ];
-      arr.forEach(item => {
+      ]`,
+      timePer: 0.5
+    };
+  },
+  mounted() {
+    this.initPiano();
+  },
+  beforeDestroy() {
+    this.keydownTimer = null;
+  },
+  computed: {
+    parseArr() {
+      console.log("this.songArr.split(", ")", JSON.parse(this.songArr));
+      return JSON.parse(this.songArr);
+    }
+  },
+  methods: {
+    // 钢琴初始化
+    async initPiano() {
+      setTimeout(() => {
+        this.computeEleSize();
+        this.pianoShow = true;
+      }, 300);
+      this.bindKeyBoradEvent();
+      this.setListener();
+
+      this.synth = SmapleLibrary.load({
+        instruments: "piano"
+      }).toMaster();
+
+      // this.synth = new Tone.PolySynth( 10 ).toMaster()
+    },
+    computeEleSize() {
+      let wkey_width = $(".piano-key-wrap").width() / 36;
+      let wkey_height = wkey_width * 7;
+      let bkey_height = wkey_height * 0.7;
+      $(".piano-key-wrap").height(wkey_height);
+      $(".bkey").height(bkey_height);
+    },
+    setListener() {
+      window.onresize = this.computeEleSize;
+      window.onorientationchange = this.computeEleSize;
+
+      // 数字简谱自动播放
+      Observe.$on(OBEvent.AUTO_PLAY_NUM_SCORE, scorename => {
+        this.playScoreByName(scorename);
+      });
+      // XML乐谱自动播放
+      Observe.$on(OBEvent.AUTO_PLAY_XML_SCORE, musicScore => {
+        this.addToPlayQueue(musicScore);
+        // try {
+        //   this.playXMLScore(musicScore)
+        // } catch (e) {
+        //   console.log(e)
+        // }
+      });
+      // MIDI 自动播放
+      Observe.$on(OBEvent.AUTO_PLAY_MIDI, midiUrl => {
+        this.loadMidiAndPlay(midiUrl);
+      });
+      // 暂停自动播放
+      Observe.$on(OBEvent.STOP_AUTO_PLAY, scoreItem => {
+        this.pauseAutoPlay(scoreItem);
+        this.pauseXMLPlay();
+        this.pauseXMLPlay();
+        this.stopMidiPlay();
+      });
+    },
+    getNoteByKeyCode(keyCode) {
+      // 改为更高性能的写法
+      let target;
+      let len = this.Notes.length || 0;
+      for (let i = 0; i < len; i++) {
+        let note = this.Notes[i];
+        if (note.keyCode == keyCode) {
+          target = note;
+          break;
+        }
+      }
+      return target;
+    },
+    getNoteByNameCode(name) {
+      // 改为更高性能的写法
+      let target;
+      let len = this.Notes.length || 0;
+      for (let i = 0; i < len; i++) {
+        let note = this.Notes[i];
+        if (note.name == name) {
+          target = note;
+          break;
+        }
+      }
+      return target;
+    },
+    getNoteByName(name = "C4") {
+      // 改为更高性能的写法
+      let target;
+      let len = this.Notes.length || 0;
+      for (let i = 0; i < len; i++) {
+        let note = this.Notes[i];
+        if (note.name == name) {
+          target = note;
+          break;
+        }
+      }
+      return target;
+    },
+    // 键盘操作 核心代码
+    bindKeyBoradEvent() {
+      const ShiftKeyCode = 16;
+      document.addEventListener(
+        "keydown",
+        e => {
+          let keyCode = e.keyCode;
+          if (this.DEV) console.log("keydown", keyCode);
+          // 按住Shfit键，则启用黑色按键
+          if (keyCode == ShiftKeyCode) {
+            this.enableBlackKey = true;
+          }
+          if (this.enableBlackKey) keyCode = "b" + keyCode;
+
+          if (keyCode == this.lastKeyCode) {
+            // 连续触发同一个键时，应节流 + 延音
+            if (!this.keyLock) {
+              this.playNoteByKeyCode(keyCode);
+              // 这里应该延音，解决中...
+              this.lastKeyCode = keyCode;
+              this.keyLock = true;
+            }
+            if (this.keydownTimer) {
+              clearTimeout(this.keydownTimer);
+              this.keydownTimer = null;
+            }
+            this.keydownTimer = setTimeout(() => {
+              this.keyLock = false;
+            }, 120);
+          } else {
+            this.playNoteByKeyCode(keyCode);
+            this.lastKeyCode = keyCode;
+          }
+        },
+        false
+      );
+      // document.addEventListener("keydown", debounce((e) => {
+      //   let keyCode = e.keyCode;
+      //   let time = +new Date()
+      //   if (this.DEV) console.log('keydown', keyCode);
+      //   // 按住Shfit键，则启用黑色按键
+      //   if (keyCode == ShiftKeyCode) {
+      //     this.enableBlackKey = true
+      //   }
+      //   if (this.enableBlackKey) keyCode = 'b' + keyCode
+      //   this.playNoteByKeyCode(keyCode)
+      //   this.lastKeyCode = keyCode
+      //   this.lastKeyTime = +new Date()
+      // }, 100, { leading: true, trailing: false }), false)
+
+      document.addEventListener(
+        "keyup",
+        e => {
+          // console.log('keyup');
+          let keyCode = e.keyCode;
+          // 松开Shfit键，则禁用黑色按键
+          if (keyCode == ShiftKeyCode) {
+            this.enableBlackKey = false;
+          }
+          $(`.wkey`).removeClass("wkey-active");
+          $(`.bkey`).removeClass("bkey-active");
+        },
+        false
+      );
+    },
+    // 鼠标操作，点击按键播放
+    clickPianoKey(e, keyCode) {
+      let pressedNote = this.getNoteByKeyCode(keyCode);
+      if (pressedNote) {
+        this.playNote(pressedNote.name);
+      }
+    },
+
+    // 根据键值播放音符
+    playNoteByKeyCode(keyCode) {
+      let pressedNote = this.getNoteByKeyCode(keyCode);
+      if (pressedNote) {
+        this.playNote(pressedNote.name);
+        let keyType = pressedNote.type;
+        if (keyType == "white") {
+          $(`[data-keyCode=${pressedNote.keyCode}]`).addClass("wkey-active");
+        } else if (keyType == "black") {
+          $(`[data-keyCode=${pressedNote.keyCode}]`).addClass("bkey-active");
+        }
+      }
+    },
+    // 触发单个音符播放
+    playNote(notename = "C4", duration = "1n") {
+      if (!this.synth) return;
+      try {
+        this.synth.triggerAttackRelease(notename, duration);
+      } catch (e) {}
+    },
+    playSong() {
+      let delay = 0;
+      this.parseArr.forEach(item => {
         let [note, duration] = item.split("_");
-        duration = parseFloat(duration * 0.5);
+        duration = parseFloat(duration * this.timePer);
         setTimeout(() => {
           if (note.includes("]")) {
             let s = note
@@ -1121,6 +1132,15 @@ export default {
         }, delay * 1000); // 这里要乘以1000
         delay += duration; // 逐步累积延迟
       });
+    },
+    async fetchSimilar() {
+      await getSimilar(this.parseArr)
+        .then(res => {
+          console.log(res);
+        })
+        .catch(err => {
+          console.log(err);
+        });
     }
   }
 };

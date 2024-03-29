@@ -107,17 +107,17 @@
       <PageHeader></PageHeader>
       <RandomLyric></RandomLyric>
       <Piano></Piano>
-      <div class="score-section responsive-section-a">
+      <!-- <div class="score-section responsive-section-a">
         <ManualPlayScoreList></ManualPlayScoreList>
         <AutoPlayScoreList></AutoPlayScoreList>
       </div>
-      <!-- <h2 class="section-title responsive-section-a">探索实体乐器</h2> -->
-      <!-- <CommodityList /> -->
+      <h2 class="section-title responsive-section-a">探索实体乐器</h2>
+      <CommodityList />
       <div class="right-drawer" :class="{ show: rightDrawerShow }">
         <div class="trigger" @click="toggleRightDrawer">歌曲列表</div>
         <div class="close" @click="hideRightDrawer">X</div>
         <ManualPlayScoreList></ManualPlayScoreList>
-      </div>
+      </div> -->
       <div class="blank-page-pc" style="height: 200px"></div>
       <!-- <PageFooter></PageFooter> -->
     </div>
@@ -147,19 +147,19 @@ export default {
     Piano,
     ManualPlayScoreList,
     AutoPlayScoreList,
-    CommodityList,
+    CommodityList
   },
   data() {
     return {
       percent: 0,
-      rightDrawerShow: false,
+      rightDrawerShow: false
     };
   },
   computed: {
     ...mapGetters(["$currentWallpaper"]),
     appBgStyle() {
       return `background-image: url(${this.$currentWallpaper});`;
-    },
+    }
   },
   mounted() {
     // setTimeout(() => {
@@ -173,7 +173,7 @@ export default {
     },
     hideRightDrawer() {
       this.rightDrawerShow = false;
-    },
-  },
+    }
+  }
 };
 </script>
