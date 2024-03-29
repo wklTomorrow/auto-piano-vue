@@ -116,6 +116,7 @@ export default {
       let i = 0;
       let playedTime = 0;
       let pressedNote;
+      console.log(musicScore)
 
       let loop = () => {
         let curStmp = new Date();
@@ -129,6 +130,7 @@ export default {
           }
           let numNotation = musicScore[i];
           let notename = this.mapNum2NoteName(step, numNotation);
+          console.log(notename, numNotation, i);
           pressedNote = this.getNoteByName(notename);
           if (pressedNote)
             $(`[data-keyCode=${pressedNote.keyCode}]`).addClass(
